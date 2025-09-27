@@ -5,13 +5,24 @@ import (
 	"image/color"
 	"log"
 	"math/rand"
+	"os"
 	"path/filepath"
 
 	"github.com/fogleman/gg"
 )
 
+func FontList() []string {
+	entries, _ := os.ReadDir(filepath.Join("fonts"))
+	fonts := make([]string, len(entries))
+	for i, entry := range entries {
+		fonts[i] = entry.Name()
+	}
+
+	return fonts
+}
+
 func RenderMessageIntoImage(message string) (*bytes.Buffer, error) {
-	fontPath := filepath.Join("fonts", "OpenSans-ExtraBold.ttf")
+	fontPath := filepath.Join("fonts", "OpenSans-Regular.ttf")
 	dc := gg.NewContext(1000, 1000) // canvas 1000px by 1000px
 	if err := dc.LoadFontFace(fontPath, 80); err != nil {
 		log.Printf(err.Error())

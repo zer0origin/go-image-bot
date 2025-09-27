@@ -1,6 +1,7 @@
 package events
 
+import "github.com/bwmarrin/discordgo"
+
 type Event interface {
-	Handlers() []any
-	UID() uint16
+	Handlers(s *discordgo.Session)
 }
