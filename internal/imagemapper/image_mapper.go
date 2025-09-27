@@ -21,9 +21,24 @@ func FontList() []string {
 	return fonts
 }
 
-func RenderMessageIntoImage(message string) (*bytes.Buffer, error) {
-	fontPath := filepath.Join("fonts", "OpenSans-Regular.ttf")
-	dc := gg.NewContext(1000, 1000) // canvas 1000px by 1000px
+func HasFont(s string) bool {
+	fonts := FontList()
+	for _, font := range fonts {
+		if font == s {
+			return true
+		}
+	}
+
+	return false
+}
+
+func RenderMessageIntoImage(message string, font string) (*bytes.Buffer, error) {
+	if font == "" {
+		font = "OpenSans-ExtraBold.ttf"
+	}
+
+	fontPath := filepath.Join("fonts", font)
+	dc := gg.NewContext(1000, 1000)
 	if err := dc.LoadFontFace(fontPath, 80); err != nil {
 		log.Printf(err.Error())
 		return nil, err
@@ -52,8 +67,13 @@ func RenderMessageIntoImage(message string) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func RenderMessageIntoImageWithBackgroundImage(message, strFilePath string) (*bytes.Buffer, error) {
-	fontPath := filepath.Join("fonts", "OpenSans-Regular.ttf")
+func RenderMessageIntoImageWithBackgroundImage(message, strFilePath string, font *string) (*bytes.Buffer, error) {
+	if font == nil || *font == "" {
+		tmp := "OpenSans-ExtraBold.ttf"
+		font = &tmp
+	}
+
+	fontPath := filepath.Join("fonts", *font)
 	dc := gg.NewContext(1000, 1000) // canvas 1000px by 1000px
 	if err := dc.LoadFontFace(fontPath, 80); err != nil {
 		log.Printf(err.Error())
@@ -66,7 +86,7 @@ func RenderMessageIntoImageWithBackgroundImage(message, strFilePath string) (*by
 
 	cx := padding + usableWidth/2
 	cy := padding + usableHeight/2
-	im, err := gg.LoadPNG(strFilePath) //backgrounds/wp12782247.png
+	im, err := gg.LoadPNG(strFilePath)
 	if err != nil {
 		return nil, err
 	}

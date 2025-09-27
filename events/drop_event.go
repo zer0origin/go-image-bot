@@ -20,9 +20,9 @@ type DropEvent struct {
 	Message   string
 }
 
-func (t *DropEvent) CreateDrop(s *discordgo.Session) {
+func (t *DropEvent) CreateDrop(s *discordgo.Session, font string) {
 	messageToFind := t.Message
-	buffer, err := imagemapper.RenderMessageIntoImage(messageToFind)
+	buffer, err := imagemapper.RenderMessageIntoImage(messageToFind, font)
 	if err != nil {
 		log.Printf("Failed to render image: %v\n", err)
 		return

@@ -2,9 +2,11 @@ package main
 
 import (
 	"SmpDiscordBot/events"
+	"SmpDiscordBot/internal/imagemapper"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -35,35 +37,18 @@ func main() {
 				Description: "Write a message for the application to send.",
 				Required:    false,
 			},
-			//{
-			//	Type:        discordgo.ApplicationCommandOptionInteger,
-			//	Description: "Pick a font for the application to use",
-			//	Choices: func() []*discordgo.ApplicationCommandOptionChoice {
-			//		fmt.Println("DOING SOMETHING")
-			//		fonts := imagemapper.FontList()
-			//		res := make([]*discordgo.ApplicationCommandOptionChoice, len(fonts))
-			//		var invalidChars = regexp.MustCompile(`[^a-zA-Z0-9]`)
-			//		for i, font := range fonts {
-			//			name := strings.ReplaceAll(invalidChars.ReplaceAllString(font, ""), "ttf", "")
-			//			if len(name) > 32 {
-			//				name = name[:32]
-			//				fmt.Println(len(name))
-			//			}
-			//
-			//			element := &discordgo.ApplicationCommandOptionChoice{
-			//				Name:  strings.ToLower(name),
-			//				Value: i,
-			//			}
-			//
-			//			res[i] = element
-			//		}
-			//
-			//		return res
-			//	}(),
-			//	Required: false,
-			//},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "font",
+				Description: "What font should the bot use? /fonts to view available fonts",
+				Required:    false,
+			},
 		},
-	}}
+	},
+		{
+			Name:        "fonts",
+			Description: "Display fonts available to the bot",
+		}}
 
 	client.AddHandler(onReady)
 	client.AddHandler(onInteraction)
@@ -110,6 +95,7 @@ func onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.ApplicationCommandData().Name == "drop" {
 		guess := ""
 		channel := i.ChannelID
+		font := ""
 
 		options := i.ApplicationCommandData().Options
 		optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
@@ -125,6 +111,16 @@ func onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			channel = opt.StringValue()
 		}
 
+		if opt, ok := optionMap["font"]; ok {
+			stringValue := opt.StringValue()
+			if !imagemapper.HasFont(stringValue) {
+				log.Printf("tried to load invalid font %s\n", stringValue)
+				return
+			}
+
+			font = stringValue
+		}
+
 		event := events.DropEvent{
 			Message:   guess,
 			ChannelID: channel,
@@ -133,9 +129,6 @@ func onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				// Note: this isn't documented, but you can use that if you want to.
-				// This flag just allows you to create messages visible only for the caller of the command
-				// (user who triggered the command)
 				Flags:   discordgo.MessageFlagsEphemeral,
 				Content: "Drop command sent!",
 			},
@@ -145,6 +138,22 @@ func onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		event.CreateDrop(s)
+		event.CreateDrop(s, font)
+	}
+
+	if i.ApplicationCommandData().Name == "fonts" {
+		fonts := imagemapper.FontList()
+
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags:   discordgo.MessageFlagsEphemeral,
+				Content: strings.Join(fonts, ", "),
+			},
+		})
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
 	}
 }
